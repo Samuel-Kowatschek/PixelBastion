@@ -1,0 +1,11 @@
+{
+  "name": "pixel-bastion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Roguelike-Tower-Defense mit Daily-Seed (Vanilla JS, Canvas)",
+  "type": "module",
+  "scripts": {
+    "test": "node test/sim.test.js",
+    "start": "npx serve ."
+  }
+}
