@@ -1,5 +1,5 @@
 // Rendering der Spielwelt. Liest den Simulationszustand nur, verändert ihn nie.
-import { PAL, SPR, buildSprite, buildSilhouette } from './sprites.js';
+import { PAL, SPR, DARKER, buildSprite, buildSilhouette } from './sprites.js';
 import { MAP_THEMES } from './data/balance.js';
 import { towerStats } from './game.js';
 import { mulberry32 } from './rng.js';
@@ -32,8 +32,6 @@ export class Renderer {
     this.leakFlash = 0;
     this.frame = 0;
     this.circleCache = new Map();
-    this.fogCanvas = document.createElement('canvas');
-    this.fogCanvas.width = W; this.fogCanvas.height = WORLD_H;
     this.mapLayer = null;
   }
 
@@ -57,17 +55,17 @@ export class Renderer {
           g.fillStyle = PAL[theme.path];
           g.fillRect(px, py, 16, 16);
           g.fillStyle = PAL[theme.pathEdge];
-          for (let i = 0; i < 5; i++) g.fillRect(px + 2 + Math.floor(r() * 12), py + 2 + Math.floor(r() * 12), 1, 1);
+          for (let i = 0; i < 2; i++) g.fillRect(px + 2 + Math.floor(r() * 12), py + 2 + Math.floor(r() * 12), 1, 1);
           if (!isPath(tx, ty - 1)) g.fillRect(px, py, 16, 1);
           if (!isPath(tx, ty + 1)) g.fillRect(px, py + 15, 16, 1);
           if (!isPath(tx - 1, ty) && !(tx === 0)) g.fillRect(px, py, 1, 16);
           if (!isPath(tx + 1, ty) && !(tx === map.cols - 1)) g.fillRect(px + 15, py, 1, 16);
         } else {
           g.fillStyle = PAL[theme.ground2];
-          for (let i = 0; i < 3; i++) {
-            const x = px + Math.floor(r() * 16), y = py + Math.floor(r() * 16);
+          if (r() < 0.5) {
+            const x = px + 2 + Math.floor(r() * 12), y = py + 2 + Math.floor(r() * 12);
             g.fillRect(x, y, 1, 1);
-            if (r() < 0.4) g.fillRect(x + 1, y, 1, 1);
+            g.fillRect(x + 1, y, 1, 1);
           }
         }
       }
@@ -79,7 +77,7 @@ export class Renderer {
       const dc = theme.deco[Math.floor(r() * theme.deco.length)];
       const key = d.kind + dc;
       if (!decoSprites[key]) {
-        decoSprites[key] = buildSprite(SPR[d.kind], { T: theme.tree, G: theme.ground2 === theme.tree ? theme.ground : theme.ground2, D: dc });
+        decoSprites[key] = buildSprite(SPR[d.kind], { T: theme.tree, H: theme.treeHi, G: theme.ground2, D: dc });
       }
       g.drawImage(decoSprites[key], d.x, d.y);
     }
@@ -88,15 +86,13 @@ export class Renderer {
     g.drawImage(this.spr.portal, st.x * 16, st.y * 16);
     g.drawImage(this.spr.castle, en.x * 16, en.y * 16);
     this.mapLayer = c;
-    // Nebel-Muster
+    // Nebel = abgedunkelte Kopie der Karte (2 Stufen dunkler, kein Muster)
     const fog = document.createElement('canvas');
     fog.width = W; fog.height = WORLD_H;
     const fg = fog.getContext('2d');
-    fg.fillStyle = PAL[1];
-    for (let y = 0; y < WORLD_H; y++) for (let x = (y % 2); x < W; x += 2) fg.fillRect(x, y, 1, 1);
-    fg.fillStyle = PAL[6];
-    for (let y = 1; y < WORLD_H; y += 4) for (let x = (y % 8) < 4 ? 0 : 2; x < W; x += 4) fg.fillRect(x, y, 1, 1);
-    this.fogPattern = fog;
+    fg.drawImage(c, 0, 0);
+    darkenCtx(fg, 0, 0, W, WORLD_H, 2);
+    this.fogLayer = fog;
     this.particles = []; this.floaters = []; this.fx = []; this.recoil.clear();
   }
 
@@ -276,20 +272,22 @@ export class Renderer {
   }
 
   drawFog(state) {
-    const fc = this.fogCanvas.getContext('2d');
-    fc.globalCompositeOperation = 'source-over';
-    fc.clearRect(0, 0, W, WORLD_H);
-    fc.drawImage(this.fogPattern, 0, 0);
-    fc.globalCompositeOperation = 'destination-out';
-    fc.fillStyle = '#000';
-    const cut = (cx, cy, r) => {
-      for (const [dy, dx] of this.spans(r)) fc.fillRect(cx - dx, cy + dy, dx * 2 + 1, 1);
+    // Dunkle Karte über alles, dann Sichtbereiche (Turmreichweiten) wieder hell
+    this.ctx.drawImage(this.fogLayer, 0, 0);
+    const reveal = (cx, cy, r) => {
+      for (const [dy, dx] of this.spans(r)) {
+        const y = cy + dy, x = cx - dx, w = dx * 2 + 1;
+        if (y < 0 || y >= WORLD_H) continue;
+        const sx = Math.max(0, x), sw = Math.min(W, x + w) - sx;
+        if (sw > 0) this.ctx.drawImage(this.mapLayer, sx, y, sw, 1, sx, y, sw, 1);
+      }
     };
-    cut(Math.round(state.map.base.x), Math.round(state.map.base.y), 30);
-    for (const t of state.towers) cut(t.x, t.y, Math.round(t.type === 'support' ? 30 : towerStatsCached(state, t).range));
-    fc.globalCompositeOperation = 'source-over';
-    this.ctx.drawImage(this.fogCanvas, 0, 0);
+    reveal(Math.round(state.map.base.x), Math.round(state.map.base.y), 30);
+    for (const t of state.towers) reveal(t.x, t.y, Math.round(t.type === 'support' ? 30 : towerStatsCached(state, t).range));
   }
+
+  /** Bereich des Bildschirms um `steps` Palettenstufen abdunkeln. */
+  darken(x, y, w, h, steps = 1) { darkenCtx(this.ctx, x, y, w, h, steps); }
 
   // ------------------------------------------------------------ Primitive
   px(x, y, c) { this.ctx.fillStyle = PAL[c]; this.ctx.fillRect(x, y, 1, 1); }
@@ -339,6 +337,26 @@ export class Renderer {
     this.line(a.x, a.y, mx, my, c);
     this.line(mx, my, b.x, b.y, c);
   }
+}
+
+// Palettenfarbe -> dunklere Palettenfarbe, direkt auf Pixeldaten.
+const DARK_LUT = (() => {
+  const m = new Map();
+  const rgb = PAL.map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+  rgb.forEach((c, i) => m.set((c[0] << 16) | (c[1] << 8) | c[2], i));
+  return { m, rgb };
+})();
+export function darkenCtx(ctx, x, y, w, h, steps = 1) {
+  const img = ctx.getImageData(x, y, w, h);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    let idx = DARK_LUT.m.get((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
+    if (idx === undefined) idx = 0;
+    for (let k = 0; k < steps; k++) idx = DARKER[idx];
+    const c = DARK_LUT.rgb[idx];
+    d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2];
+  }
+  ctx.putImageData(img, x, y);
 }
 
 // Kleiner Cache, damit der Nebel nicht jeden Frame alle Buffs neu rechnet.
