@@ -1,0 +1,42 @@
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #000000;
+  color: #c2c3c7;
+  overflow: hidden;
+  font-family: monospace;
+}
+
+#wrap {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#screen {
+  display: block;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+#fallback {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  margin: 0;
+  padding: 12px;
+  background: #1d2b53;
+  color: #fff1e8;
+  border: 2px solid #ffa300;
+  line-height: 1.5;
+}
+
+#fallback[hidden] { display: none; }

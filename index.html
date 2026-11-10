@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Pixel Bastion</title>
+  <meta name="description" content="Roguelike-Tower-Defense mit täglichem Seed">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="wrap">
+    <canvas id="screen" width="320" height="180" aria-label="Pixel Bastion Spielfeld"></canvas>
+  </main>
+  <p id="fallback" hidden>
+    Pixel Bastion konnte nicht geladen werden. Browser blockieren ES-Module oft bei
+    <code>file://</code>. Starte einen lokalen Server, z.&nbsp;B. <code>npx serve</code>,
+    und öffne die angezeigte Adresse.
+  </p>
+  <script type="module" src="src/main.js"></script>
+  <script>
+    // Hinweis anzeigen, falls die Module nicht laden (z. B. Chrome mit file://)
+    setTimeout(function () {
+      if (!window.__app) document.getElementById('fallback').hidden = false;
+    }, 1500);
+  </script>
+</body>
+</html>
