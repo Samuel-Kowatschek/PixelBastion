@@ -102,6 +102,7 @@ export class App {
     this.screen = 'game';
     this.speed = 1;
     this.paused = !!resume;
+    this.tutorial = !resume && !store.load().hideTutorial;
     this.sel = null;
     this.armed = null;
     this.result = null;
@@ -200,6 +201,10 @@ export class App {
     }
     const g = this.game;
     if (!g) return false;
+    if (this.tutorial) {
+      if (k === 'Enter' || k === ' ' || k === 'Escape') { this.tutorial = false; return true; }
+      return false;
+    }
     if (g.over) {
       if (k === 'Enter' || k === 'Escape') { this.toMenu(); return true; }
       if (k === 's') { this.share(); return true; }
@@ -280,10 +285,10 @@ export class App {
     this.box(x, y, w, h, border);
     this.box(x + 1, y + 1, w - 2, h - 2, bg);
   }
-  dim(x = 0, y = 0, w = W, h = H) {
-    this.ctx.fillStyle = PAL[0];
-    for (let yy = y; yy < y + h; yy++) for (let xx = x + (yy % 2); xx < x + w; xx += 2) this.ctx.fillRect(xx, yy, 1, 1);
+  dim(x = 0, y = 0, w = W, h = H, steps = 2) {
+    this.r.darken(x, y, w, h, steps);
   }
+
   hovered(x, y, w, h) { const m = this.mouse; return m.x >= x && m.y >= y && m.x < x + w && m.y < y + h; }
 
   /**
@@ -487,13 +492,48 @@ export class App {
 
     if (g.phase === 'pick' && !g.over) this.drawPick(g);
     if (g.over) this.drawGameOver(g);
+    else if (this.tutorial) this.drawTutorial(g);
     else if (this.paused) {
       this.dim(0, 0, W, WORLD_H);
       drawTextCentered(ctx, 'PAUSE', W / 2, 60, PAL[7], 3, PAL[0]);
       drawTextCentered(ctx, 'P / LEERTASTE ZUM FORTSETZEN', W / 2, 82, PAL[6], 1, PAL[0]);
       this.button(W / 2 - 40, 94, 80, 14, 'WEITER', { onClick: () => { this.paused = false; } });
-      this.button(W / 2 - 40, 112, 80, 14, 'ZUM MENÜ', { onClick: () => this.toMenu(), info: this.run.counted ? 'FORTSCHRITT WIRD GESPEICHERT' : 'RUN WIRD ABGEBROCHEN' });
+      this.button(W / 2 - 40, 112, 80, 14, 'ANLEITUNG', { onClick: () => { this.tutorial = true; } });
+      this.button(W / 2 - 40, 130, 80, 14, 'ZUM MENÜ', { onClick: () => this.toMenu(), info: this.run.counted ? 'FORTSCHRITT WIRD GESPEICHERT' : 'RUN WIRD ABGEBROCHEN' });
     }
+  }
+
+  drawTutorial(g) {
+    const ctx = this.ctx;
+    this.dim(0, 0, W, H, 3);
+    const w = 290, h = 162, x = (W - w) / 2, y = 9;
+    this.frameBox(x, y, w, h, 0, 10);
+    this.buttons.push({ x: 0, y: 0, w: W, h: H, id: 'tut-block', block: true });
+    drawTextCentered(ctx, "SO GEHT'S", W / 2, y + 5, PAL[10], 2);
+    const steps = [
+      ['portal', 'GEGNER LAUFEN VOM PORTAL ZUR BURG. JEDER DURCHBRUCH KOSTET LEBEN.'],
+      ['plot', 'BAUPLATZ (ECKEN-MARKIERUNG) ANTIPPEN -> TURM WÄHLEN.'],
+      ['arrow', 'TURM ANTIPPEN -> UPGRADE A ODER B (JE 2 STUFEN) ODER VERKAUFEN.'],
+      ['card', 'NACH JEDER WELLE: 1 VON 3 KARTEN (TURM, UPGRADE, RELIKT, RISIKO).'],
+      ['play', '"LOS" STARTET DIE WELLE FRÜHER = MEHR ZEITBONUS IM SCORE.'],
+      ['flyer', 'FLIEGER TREFFEN NUR PFEIL, FROST, BLITZ UND GIFT.'],
+    ];
+    steps.forEach(([icon, text], i) => {
+      const yy = y + 22 + i * 17;
+      const img = this.r.spr[icon];
+      if (icon === 'arrow') ctx.drawImage(this.r.spr.base, x + 6, yy - 4);
+      if (img.width === 16) { ctx.drawImage(img, x + 6, yy - (icon === 'arrow' ? 4 : 2)); }
+      else ctx.drawImage(img, x + 10, yy + 2);
+      wrapText(text, 62).forEach((l, j) => drawText(ctx, l, x + 28, yy + j * 7, PAL[7]));
+    });
+    const m = MUTATORS[g.mutator];
+    drawText(ctx, 'MUTATOR: ' + m.name, x + 6, y + 122, PAL[9]);
+    wrapText(m.desc, 70).slice(0, 1).forEach((l) => drawText(ctx, l, x + 6, y + 129, PAL[6]));
+    drawText(ctx, this.pointerType === 'touch' ? 'TOUCH: ZWEIMAL TIPPEN BESTÄTIGT.' : 'TASTEN: 1-6 BAUEN, Q/E UPGRADE, LEERTASTE START, F TEMPO.', x + 6, y + 137, PAL[13]);
+    this.button(x + 6, y + h - 17, 136, 13, "LOS GEHT'S", { color: 3, hoverColor: 11, onClick: () => { this.tutorial = false; } });
+    this.button(x + w - 142, y + h - 17, 136, 13, 'NICHT MEHR ZEIGEN', {
+      onClick: () => { this.tutorial = false; store.load().hideTutorial = true; store.save(); },
+    });
   }
 
   drawTopBar(g) {

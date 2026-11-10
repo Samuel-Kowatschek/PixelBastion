@@ -59,7 +59,7 @@ function frame(now) {
   const dt = Math.min(250, now - last);
   last = now;
   const g = app.game;
-  if (app.screen === 'game' && g && !app.paused && !g.over && g.phase !== 'pick') {
+  if (app.screen === 'game' && g && !app.paused && !app.tutorial && !g.over && g.phase !== 'pick') {
     acc += dt * app.speed;
     let n = 0;
     while (acc >= STEP_MS && n < 40) {

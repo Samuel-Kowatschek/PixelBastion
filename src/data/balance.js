@@ -45,11 +45,12 @@ export const BALANCE = {
 };
 
 // Paletten-Themen für die Karte (Indizes in die PICO-8-Palette).
+// Ruhige Böden (wenig Kontrast im Boden), deutlicher Kontrast Boden <-> Pfad.
 export const MAP_THEMES = [
-  { name: 'Wiese', ground: 3, ground2: 11, path: 15, pathEdge: 4, deco: [11, 3, 8, 10], tree: 3 },
-  { name: 'Wüste', ground: 9, ground2: 15, path: 4, pathEdge: 2, deco: [4, 15, 11], tree: 11 },
-  { name: 'Frost', ground: 6, ground2: 7, path: 13, pathEdge: 5, deco: [12, 7, 13], tree: 1 },
-  { name: 'Moor', ground: 1, ground2: 5, path: 4, pathEdge: 0, deco: [3, 13, 2], tree: 3 },
-  { name: 'Lava', ground: 5, ground2: 2, path: 0, pathEdge: 8, deco: [8, 9, 2], tree: 0 },
-  { name: 'Herbst', ground: 4, ground2: 9, path: 15, pathEdge: 2, deco: [8, 9, 10], tree: 8 },
+  { name: 'Wiese', ground: 3, ground2: 11, path: 15, pathEdge: 4, deco: [8, 10, 7], tree: 11, treeHi: 3 },
+  { name: 'Wüste', ground: 15, ground2: 9, path: 4, pathEdge: 2, deco: [9, 4, 8], tree: 3, treeHi: 11 },
+  { name: 'Frost', ground: 7, ground2: 6, path: 13, pathEdge: 5, deco: [12, 13, 6], tree: 1, treeHi: 12 },
+  { name: 'Moor', ground: 1, ground2: 5, path: 4, pathEdge: 0, deco: [13, 2, 3], tree: 3, treeHi: 11 },
+  { name: 'Lava', ground: 5, ground2: 0, path: 9, pathEdge: 8, deco: [8, 9, 2], tree: 0, treeHi: 5 },
+  { name: 'Herbst', ground: 4, ground2: 2, path: 15, pathEdge: 9, deco: [8, 10, 9], tree: 9, treeHi: 10 },
 ];
