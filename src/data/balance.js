@@ -7,7 +7,7 @@ export const BALANCE = {
   cols: 20,
   rows: 10,
 
-  startGold: 160,
+  startGold: 180,
   startLives: 20,
   sellRefund: 0.6,
 
@@ -19,7 +19,7 @@ export const BALANCE = {
   // Wellenbudget: base + perWave * w + quad * w^2 (Einheiten = enemy.cost)
   waveBudget: { base: 8, perWave: 5.5, quad: 0.55 },
   // HP-Multiplikator pro Welle (w = 0-basiert)
-  hpScale: { perWave: 0.16, quad: 0.018 },
+  hpScale: { perWave: 0.14, quad: 0.014 },
   waveGoldBonus: { base: 20, perWave: 4 },
   groupsPerWave: [2, 4],
   spawnGap: 0.55, // Sekunden zwischen zwei Gegnern einer Gruppe (Basis)

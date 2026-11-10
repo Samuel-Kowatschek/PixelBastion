@@ -14,10 +14,11 @@ const G = {
   '"': [5, 5, 0, 0, 0], '<': [1, 2, 4, 2, 1], '>': [4, 2, 1, 2, 4], '=': [0, 7, 0, 7, 0], '_': [0, 0, 0, 0, 7],
   '*': [0, 5, 2, 5, 0], '[': [3, 2, 2, 2, 3], ']': [6, 2, 2, 2, 6], '|': [2, 2, 2, 2, 2], '&': [2, 5, 2, 5, 3],
   '$': [3, 6, 2, 3, 6],
+  // Umlaute kompakt innerhalb der 5 Zeilen (Punkte oben, Buchstabe gestaucht)
+  'Ä': [5, 0, 2, 7, 5], 'Ö': [5, 0, 7, 5, 7], 'Ü': [5, 0, 5, 5, 7],
 };
 // Breite Sonderzeichen (5 Spalten)
 const WIDE = { '#': [10, 31, 10, 31, 10] };
-const UMLAUT = { 'Ä': 'A', 'Ö': 'O', 'Ü': 'U' };
 
 export const CHAR_W = 4;
 export const LINE_H = 7;
@@ -39,13 +40,7 @@ export function drawText(ctx, str, x, y, color, scale = 1) {
   ctx.fillStyle = color;
   x = Math.round(x); y = Math.round(y);
   for (let i = 0; i < s.length; i++) {
-    let ch = s[i];
-    const base = UMLAUT[ch];
-    if (base) {
-      ch = base;
-      ctx.fillRect(x, y - scale, scale, scale);
-      ctx.fillRect(x + 2 * scale, y - scale, scale, scale);
-    }
+    const ch = s[i];
     if (WIDE[ch]) {
       const g = WIDE[ch];
       for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) if (g[r] & (16 >> c)) ctx.fillRect(x + c * scale, y + r * scale, scale, scale);

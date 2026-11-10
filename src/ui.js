@@ -347,8 +347,9 @@ export class App {
     else if (this.screen === 'game') this.drawGame();
     if (this.toast) {
       const tw = textWidth(this.toast.text) + 10;
-      this.frameBox(Math.round(W / 2 - tw / 2), 22, tw, 11, 0, 10);
-      drawTextCentered(this.ctx, this.toast.text, W / 2, 25, PAL[10]);
+      const ty = this.screen === 'game' ? 22 : 146;
+      this.frameBox(Math.round(W / 2 - tw / 2), ty, tw, 11, 0, 10);
+      drawTextCentered(this.ctx, this.toast.text, W / 2, ty + 3, PAL[10]);
       if (--this.toast.t <= 0) this.toast = null;
     }
   }
@@ -415,16 +416,17 @@ export class App {
     drawTextCentered(ctx, 'VERLAUF', W / 2, 11, PAL[10], 2);
     const h = store.load().history;
     if (!h.length) drawTextCentered(ctx, 'NOCH KEINE DAILY-RUNS', W / 2, 60, PAL[6]);
-    drawText(ctx, 'DATUM        #    WELLE   LEBEN  SCORE    MUTATOR', 18, 28, PAL[13]);
+    const cols = [18, 66, 96, 130, 158, 200];
+    ['DATUM', 'NR.', 'WELLE', 'LEBEN', 'SCORE', 'MUTATOR'].forEach((t, i) => drawText(ctx, t, cols[i], 28, PAL[13]));
     h.slice(0, 16).forEach((r, i) => {
       const y = 37 + i * 7;
       const c = r.won ? 11 : 7;
-      drawText(ctx, fmtDate(r.date), 18, y, PAL[c]);
-      drawText(ctx, '#' + r.no, 70, y, PAL[c]);
-      drawText(ctx, `${r.wave}/${r.waves}`, 90, y, PAL[c]);
-      drawText(ctx, String(r.lives), 122, y, PAL[c]);
-      drawText(ctx, String(r.score), 146, y, PAL[c]);
-      drawText(ctx, MUTATORS[r.mutator] ? MUTATORS[r.mutator].name : '?', 182, y, PAL[c]);
+      drawText(ctx, fmtDate(r.date), cols[0], y, PAL[c]);
+      drawText(ctx, '#' + r.no, cols[1], y, PAL[c]);
+      drawText(ctx, `${r.wave}/${r.waves}`, cols[2], y, PAL[c]);
+      drawText(ctx, String(r.lives), cols[3], y, PAL[c]);
+      drawText(ctx, String(r.score), cols[4], y, PAL[c]);
+      drawText(ctx, MUTATORS[r.mutator] ? MUTATORS[r.mutator].name : '?', cols[5], y, PAL[c]);
     });
     this.button(W / 2 - 30, 156, 60, 13, 'ZURÜCK', { onClick: () => { this.screen = 'menu'; } });
   }
@@ -570,7 +572,15 @@ export class App {
     }
     const maxc = 48;
     const s = normalize(info);
-    drawText(ctx, s.length > maxc ? s.slice(0, maxc - 1) + '.' : s, 2, 173, PAL[6]);
+    if (s.length > maxc) {
+      // Lange Hinweise als Tooltip-Leiste über dem HUD
+      const lines = wrapText(s, 78);
+      const th = lines.length * 7 + 3;
+      this.frameBox(0, WORLD_H - th - 1, W, th + 1, 0, 5);
+      lines.forEach((l, i) => drawText(ctx, l, 3, WORLD_H - th + 1 + i * 7, PAL[7]));
+    } else {
+      drawText(ctx, s, 2, 173, PAL[6]);
+    }
   }
 
   drawBuildPopup(g, plot) {
@@ -590,7 +600,7 @@ export class App {
       const id = 'build-' + t;
       const hov = this.button(cx, y + 2, cw, h - 4, '', {
         id, hidden: true, confirm: true, disabled: !can,
-        info: `[${i + 1}] ${TOWERS[t].name} ${cost}G - ${TOWERS[t].role}`,
+        info: `${i + 1}: ${TOWERS[t].name} ${cost}G - ${TOWERS[t].role}`,
         onClick: () => { if (this.act({ a: 'build', plot: plot.id, type: t })) { this.sel = { kind: 'tower', id: g.map.plots[plot.id].tower }; } },
       });
       if (hov) {
